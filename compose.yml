@@ -1,0 +1,122 @@
+x-jupyter-build: &jupyter-build
+  context: .
+  dockerfile: Dockerfile.jupyterlab
+
+services:
+  # create a SuperLink service
+  superlink:
+    image: flwr/superlink:${FLWR_VERSION:-1.28.0}
+    command:
+      - --insecure
+      - --isolation
+      - process
+      # - --database
+      # - /outputs/state.db
+    environment:
+      FLWR_LOG_LEVEL: DEBUG
+    ports:
+      - 127.0.0.1:9093:9093
+    networks:
+      - flower
+    # volumes:
+    #   - outputs:/outputs
+
+  # create two SuperNode services with different node configs
+  supernode-1:
+    image: flwr/supernode:${FLWR_VERSION:-1.28.0}
+    command:
+      - --insecure
+      - --superlink
+      - superlink:9092
+      - --clientappio-api-address
+      - 0.0.0.0:9094
+      - --isolation
+      - process
+      - --node-config
+      - "partition-id=0 num-partitions=2"
+    environment:
+      FLWR_LOG_LEVEL: DEBUG
+    networks:
+      - flower
+
+  supernode-2:
+    image: flwr/supernode:${FLWR_VERSION:-1.28.0}
+    command:
+      - --insecure
+      - --superlink
+      - superlink:9092
+      - --clientappio-api-address
+      - 0.0.0.0:9094
+      - --isolation
+      - process
+      - --node-config
+      - "partition-id=1 num-partitions=2"
+    environment:
+      FLWR_LOG_LEVEL: DEBUG
+    networks:
+      - flower
+
+  # ServerApp Runner (Runs the aggregation logic)
+  serverapp-runner:
+    image: flower-custom-jupyter
+    build: *jupyter-build
+    command:
+      - flower-superexec
+      - --insecure
+      - --plugin-type
+      - serverapp
+      - --appio-api-address
+      - superlink:9091
+    networks:
+      - flower
+    working_dir: /home/jovyan/quickstart-pytorch-usps
+    volumes:
+      - outputs:/home/jovyan/quickstart-pytorch-usps/outputs
+
+  # ClientApp Runners (Run the local training logic)
+  clientapp-runner-1:
+    image: flower-custom-jupyter
+    build: *jupyter-build
+    command:
+      - flower-superexec
+      - --insecure
+      - --plugin-type
+      - clientapp
+      - --appio-api-address
+      - supernode-1:9094
+    networks:
+      - flower
+    working_dir: /home/jovyan/quickstart-pytorch-usps
+
+  clientapp-runner-2:
+    image: flower-custom-jupyter
+    build: *jupyter-build
+    command:
+      - flower-superexec
+      - --insecure
+      - --plugin-type
+      - clientapp
+      - --appio-api-address
+      - supernode-2:9094
+    networks:
+      - flower
+    working_dir: /home/jovyan/quickstart-pytorch-usps
+
+  jupyterlab:
+    image: flower-custom-jupyter
+    build: *jupyter-build
+    networks:
+      - flower
+    ports:
+      - 127.0.0.1:8888:8888
+    volumes:
+      - notebooks:/home/jovyan/work
+      - outputs:/home/jovyan/outputs:ro
+
+networks:
+  flower:
+    driver: bridge
+
+volumes:
+  outputs:
+  notebooks:

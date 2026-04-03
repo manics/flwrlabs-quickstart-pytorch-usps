@@ -1,0 +1,7 @@
+FROM quay.io/jupyter/pytorch-notebook:2026-04-02
+
+COPY quickstart-pytorch-usps /home/jovyan/quickstart-pytorch-usps
+
+RUN /opt/conda/bin/pip install /home/jovyan/quickstart-pytorch-usps
+RUN mkdir /home/jovyan/.flwr
+COPY config.toml /home/jovyan/.flwr/

@@ -32,4 +32,4 @@ fraction-evaluate = 0.5
 local-epochs = 1
 learning-rate = 0.1
 batch-size = 32
-output-dir = "/outputs"
+output-dir = "outputs"
