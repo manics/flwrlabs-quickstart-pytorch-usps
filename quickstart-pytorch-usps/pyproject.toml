@@ -8,10 +8,12 @@ version = "1.0.1"
 description = "Federated Learning with PyTorch and Flower (Quickstart Example)"
 license = "Apache-2.0"
 dependencies = [
-    "flwr[simulation]>=1.26.0",
+    # It'd be nice if flwr used semver. It doesn't.
+    "flwr[simulation]>=1.28.0,<1.29",
     "flwr-datasets[vision]>=0.5.0",
-    "torch==2.8.0",
-    "torchvision==0.23.0",
+    # Use whatever version of torch and torchvision is in the base image
+    "torch",
+    "torchvision",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -30,3 +32,4 @@ fraction-evaluate = 0.5
 local-epochs = 1
 learning-rate = 0.1
 batch-size = 32
+output-dir = "/outputs"

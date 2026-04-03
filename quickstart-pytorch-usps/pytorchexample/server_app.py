@@ -1,5 +1,6 @@
 """pytorchexample: A Flower / PyTorch app."""
 
+import os
 import torch
 from flwr.app import ArrayRecord, ConfigRecord, Context, MetricRecord
 from flwr.serverapp import Grid, ServerApp
@@ -19,6 +20,7 @@ def main(grid: Grid, context: Context) -> None:
     fraction_evaluate: float = context.run_config["fraction-evaluate"]
     num_rounds: int = context.run_config["num-server-rounds"]
     lr: float = context.run_config["learning-rate"]
+    output_dir: str = context.run_config.get("output-dir", "outputs")
 
     # Load global model
     global_model = Net()
@@ -39,7 +41,8 @@ def main(grid: Grid, context: Context) -> None:
     # Save final model to disk
     print("\nSaving final model to disk...")
     state_dict = result.arrays.to_torch_state_dict()
-    torch.save(state_dict, "final_model.pt")
+    os.makedirs(output_dir, exist_ok=True)
+    torch.save(state_dict, os.path.join(output_dir, "final_model.pt"))
 
 
 def global_evaluate(server_round: int, arrays: ArrayRecord) -> MetricRecord:
